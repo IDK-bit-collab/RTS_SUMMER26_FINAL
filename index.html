@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Avionics RTS Capstone</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #10151d;
+      color: #e8edf3;
+      line-height: 1.6;
+    }
+
+    header {
+      background: #182332;
+      padding: 50px 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin-bottom: 10px;
+    }
+
+    main {
+      max-width: 1000px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    section {
+      background: #182332;
+      margin: 24px 0;
+      padding: 25px;
+      border-radius: 10px;
+    }
+
+    h2 {
+      border-bottom: 2px solid #6fa8dc;
+      padding-bottom: 8px;
+    }
+
+    a {
+      color: #8fc7ff;
+    }
+
+    .button {
+      display: inline-block;
+      margin: 6px;
+      padding: 10px 18px;
+      background: #2667a8;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+      margin: 20px auto;
+      border-radius: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border: 1px solid #66717e;
+      text-align: left;
+    }
+
+    th {
+      background: #26384d;
+    }
+
+    footer {
+      padding: 25px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Avionics Real-Time Synchronization and Priority-Inversion Demonstration</h1>
+
+  <p>
+    A FreeRTOS ESP32-S3 simulation demonstrating task communication,
+    resource management, shared-data protection, and priority inheritance.
+  </p>
+
+  <a class="button"
+     href="https://wokwi.com/projects/471071858928177153"
+     target="_blank">
+    Open Wokwi Simulation
+  </a>
+
+  <a class="button"
+     href="README.md">
+    Full README
+  </a>
+</header>
+
+<main>
+
+  <section>
+    <h2>Project Overview</h2>
+
+    <p>
+      This avionics-themed system uses a binary semaphore to transfer a
+      simulated UAV beacon event from an interrupt to a responder task,
+      a counting semaphore to control access to three telemetry decoder
+      resources, and a mutex to protect shared navigation and guidance
+      tracking data.
+    </p>
+
+    <p>
+      The system also demonstrates priority inversion using high-, medium-,
+      and low-priority tasks. With priority inheritance enabled, the
+      high-priority task waited approximately 12.229 seconds. With priority
+      inheritance disabled, it waited approximately 37.211 seconds.
+    </p>
+  </section>
+
+  <section>
+    <h2>Demo Video</h2>
+
+    <p>
+      The demonstration video will be embedded here after it is uploaded.
+    </p>
+
+    <!-- Replace VIDEO_ID with the YouTube video ID after uploading.
+    <iframe
+      width="100%"
+      height="500"
+      src="https://www.youtube.com/embed/VIDEO_ID"
+      title="Avionics RTS Capstone Demonstration"
+      allowfullscreen>
+    </iframe>
+    -->
+  </section>
+
+  <section>
+    <h2>Binary Semaphore</h2>
+
+    <p>
+      A pushbutton simulates a UAV beacon pulse. The GPIO interrupt gives
+      a binary semaphore, which wakes the beacon responder task and keeps
+      the extended processing outside of the interrupt.
+    </p>
+
+    <img
+      src="images/binary-semaphore-diagram.png"
+      alt="Binary semaphore ISR-to-task diagram">
+  </section>
+
+  <section>
+    <h2>Counting Semaphore</h2>
+
+    <p>
+      Four telemetry tasks compete for three available decoder resources.
+      The counting semaphore allows three tasks to use the decoder pool
+      simultaneously while the fourth task waits for a slot.
+    </p>
+
+    <img
+      src="images/counting-semaphore-diagram.png"
+      alt="Counting semaphore telemetry decoder diagram">
+  </section>
+
+  <section>
+    <h2>Task Table</h2>
+
+    <table>
+      <tr>
+        <th>Task</th>
+        <th>Avionics Role</th>
+        <th>Priority</th>
+        <th>Synchronization</th>
+      </tr>
+
+      <tr>
+        <td>Beacon responder</td>
+        <td>Responds to UAV beacon interrupt</td>
+        <td>12</td>
+        <td>Binary semaphore</td>
+      </tr>
+
+      <tr>
+        <td>Telemetry decoder 1–4</td>
+        <td>Processes simulated telemetry</td>
+        <td>5</td>
+        <td>Counting semaphore</td>
+      </tr>
+
+      <tr>
+        <td>Navigation writer</td>
+        <td>Updates shared tracking data</td>
+        <td>8</td>
+        <td>Mutex</td>
+      </tr>
+
+      <tr>
+        <td>Guidance writer</td>
+        <td>Updates shared tracking data</td>
+        <td>8</td>
+        <td>Mutex</td>
+      </tr>
+
+      <tr>
+        <td>High-priority task H</td>
+        <td>Time-critical avionics task</td>
+        <td>15</td>
+        <td>Priority-inversion lock</td>
+      </tr>
+
+      <tr>
+        <td>Medium-priority task M</td>
+        <td>CPU-intensive background task</td>
+        <td>10</td>
+        <td>No lock</td>
+      </tr>
+
+      <tr>
+        <td>Low-priority task L</td>
+        <td>Shared-resource owner</td>
+        <td>5</td>
+        <td>Priority-inversion lock</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Priority-Inversion Results</h2>
+
+    <table>
+      <tr>
+        <th>Configuration</th>
+        <th>H Wait Time</th>
+      </tr>
+
+      <tr>
+        <td>Mutex with priority inheritance</td>
+        <td>12.229 seconds</td>
+      </tr>
+
+      <tr>
+        <td>Binary semaphore without priority inheritance</td>
+        <td>37.211 seconds</td>
+      </tr>
+    </table>
+
+    <p>
+      Without priority inheritance, the medium-priority task preempted the
+      low-priority task while it still owned the resource required by H.
+      This caused H to wait approximately three times longer.
+    </p>
+
+    <h3>Priority Inheritance Enabled</h3>
+
+    <img
+      src="images/priority-inheritance-on.png"
+      alt="Priority inheritance enabled timing result">
+
+    <h3>Priority Inheritance Disabled</h3>
+
+    <img
+      src="images/priority-inheritance-off.png"
+      alt="Priority inheritance disabled timing result">
+  </section>
+
+  <section>
+    <h2>Hazard Analysis</h2>
+
+    <p>
+      The main hazards in this system are priority inversion, corrupted
+      shared tracking data, unavailable telemetry decoder resources, and
+      excessive interrupt processing. Priority inversion is reduced by
+      using a priority-inheritance mutex, shared tracking data is protected
+      with a mutex, decoder access is limited by the counting semaphore,
+      and the ISR remains short by using a binary semaphore to wake the
+      responder task instead of completing extended processing inside the
+      interrupt.
+    </p>
+  </section>
+
+  <section>
+    <h2>Documentation</h2>
+
+    <p>
+      The engineering analysis, H/M/L timelines, timing evidence, and
+      induced-failure explanation are available in the full project README.
+    </p>
+
+    <a class="button" href="README.md">
+      View Full README
+    </a>
+  </section>
+
+</main>
+
+<footer>
+  Avionics RTS Final Portfolio Project
+</footer>
+
+</body>
+</html>
