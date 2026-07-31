@@ -59,7 +59,7 @@
  */
 
 #ifndef USE_PI_MUTEX
-#define USE_PI_MUTEX 0
+#define USE_PI_MUTEX 1
 #endif
 
 #include <stdio.h>
